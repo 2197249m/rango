@@ -4,6 +4,8 @@ from django.http import HttpResponse
 # Import the category and page model
 from rango.models import Category, Page
 
+from rango.forms import CategoryForm, PageForm 
+
 def index(request):
 	# Query the database for a list of ALL categories currently stored.
 	# Order the categories by no. likes in descending order.
@@ -47,3 +49,27 @@ def about(request):
 	context_dict = {'boldmessage':"This tutorial has been put together by James Mushahwar"}
 	return render(request, 'rango/about.html', context=context_dict)
 	
+def add_category(request):
+    form = CategoryForm()
+
+    # A HTTP POST?
+    if request.method == 'POST':
+        form = CategoryForm(request.POST)
+
+        # Have we been provided with a valid form?
+        if form.is_valid():
+            # Save the new category to the database.
+            form.save(commit=True)
+            # Now that the category is saved
+            # We could give a confirmation message
+            # But since the most recent category added is on the index page
+            # Then we can direct the user back to the index page.
+            return index(request)
+        else:
+            # The supplied form contained errors -
+            # just print them to the terminal.
+            print(form.errors)
+
+    # Will handle the bad form, new form, or no form supplied cases.
+    # Render the form with error messages (if any).
+    return render(request, 'rango/add_category.html', {'form': form})
