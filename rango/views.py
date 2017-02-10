@@ -3,48 +3,60 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import authenticate, login, logout
 from django.core.urlresolvers import reverse
 from django.contrib.auth.decorators import login_required
-
+from datetime import datetime
 
 # Import the Category model
 from rango.models import Category, Page
 from rango.forms import CategoryForm, PageForm, UserForm, UserProfileForm
 
+
+
 def index(request):
-    # Construct a dictionary to pass to the template engine as its context.
-    # Note the key boldmessage is the same as {{ boldmessage }} in the template!
-
-    # Query the database for a list of ALL categories currently stored.
-    # Order the categories by no. likes in descending order.
-    # Retrieve the top 5 only - or all if less than 5.
-    # Place the list in our context_dict dictionary
-    # that will be passed to the template engine.
-
-    category_list = Category.objects.order_by('-likes')[:5]
-    page_list = Page.objects.order_by('-views')[:5]
-    context_dict = {'categories': category_list, 'pages': page_list}
-
-    # Return a rendered response to send to the client.
-    # We make use of the shortcut function to make our lives easier.
-    # Note that the first parameter is the template we wish to use.
-    return render(request, 'rango/index.html', context=context_dict)
+	request.session.set_test_cookie()
+	category_list = Category.objects.order_by('-likes')[:5]
+	page_list = Page.objects.order_by('-views')[:5]
+	context_dict = {'categories': category_list, 'pages': page_list}
+	
+	visitor_cookie_handle(request)
+	context_dict['visits'] = request.session['visits']
+	
+	response = render(request, 'rango/index.html', context_dict)
+	return response
+  
 
 def about(request):
-    # Construct a dictionary to pass to the template engine as its context.
-    # Note the key boldmessage is the same as {{ boldmessage }} in the template!
-    #context_dict = {'boldmessage': "This tutorial has been put together by Frances."}
+	request.session.set_test_cookie()
+	visitor_cookie_handler(request)
+	context_dict = {'boldmessage': "This tutorial has been put together by Ben Stevenson!",'vistis': request.session['visits'] }
+	response = render(request, 'rango/about.html', context = context_dict)
+	return response
 
-    # Return a rendered response to send to the client.
-    # We make use of the shortcut function to make our lives easier.
-    # Note that the first parameter is the template we wish to use.
-    #return render(request, 'rango/about.html', context=context_dict)
+	
+	
+def get_server_side_cookie(request, cookie, default_val=None):
+    val = request.sessions.get(cookie)
+    if not val:
+        val = default_val
+    return val	
+	
+	
+	
+def visitor_cookie_handle(request):
+	visits = int(request.COOKIES.get('visits', '1'))
+	
+	last_visit_cookie = request.COOKIES.get('last_visit', str(datetime.now()))
+	last_visit_time = datetime.strptime(last_visit_cookie[:-7],'%Y-%m-%d %H:%M:%S')
+	
+	if (datetime.now() - last_visit_time).days > 0:
+		visits = visits + 1
+		request.session['last_visit'] = str(datetime.now())
+	else:
+		visits = 1
+		request.session['last_visit'] = last_visit_cookie
+	request.session['visits'] = visits
+	
 
-    # prints out whether the method is a GET or a POST
-    print(request.method)
-    # prints out the user name, if no one is logged in it prints `AnonymousUser`
-    print(request.user)
-    return render(request, 'rango/about.html', {})
-
-
+	
 def show_category(request, category_name_slug):
     # Create a context dictionary which we can pass
     #  to the template rendering engine.
