@@ -26,8 +26,8 @@ def index(request):
 
 def about(request):
 	request.session.set_test_cookie()
-	visitor_cookie_handler(request)
-	context_dict = {'boldmessage': "This tutorial has been put together by Ben Stevenson!",'vistis': request.session['visits'] }
+	visitor_cookie_handle(request)
+	context_dict = {'boldmessage': "This tutorial has been put together by James Mushahwar",'vistis': request.session['visits'] }
 	response = render(request, 'rango/about.html', context = context_dict)
 	return response
 
@@ -89,7 +89,6 @@ def show_category(request, category_name_slug):
     # Go render the response and return it to the client.
     return render(request, 'rango/category.html', context_dict)
 
-@login_required
 def add_category(request):
     form = CategoryForm()
 
@@ -116,28 +115,25 @@ def add_category(request):
     # Render the form with error messages (if any).
     return render(request, 'rango/add_category.html', {'form': form})
 
-@login_required
 def add_page(request, category_name_slug):
-    try:
-        category = Category.objects.get(slug=category_name_slug)
-    except Category.DoesNotExist:
-        category = None
-
-    form = PageForm()
-    if request.method == 'POST':
-        form = PageForm(request.POST)
-        if form.is_valid():
-            if category:
-                page = form.save(commit=False)
-                page.category = category
-                page.views = 0
-                page.save()
-            return show_category(request, category_name_slug)
-        else:
-            print(form.errors)
-
-    context_dict = {'form':form, 'category': category}
-    return render(request, 'rango/add_page.html', context_dict)
+	try:
+		category = Category.objects.get(slug=category_name_slug)
+	except Category.DoesNotExist:
+		category = None
+	form = PageForm()
+	if request.method == 'POST':
+		form = PageForm(request.POST)
+		if form.is_valid():
+			if category:
+				page = form.save(commit=False)
+				page.category = category
+				page.views = 0
+				page.save()
+				return show_category(request, category_name_slug)
+		else:
+			print(form.errors)
+	context_dict = {'form':form, 'category':category}
+	return render(request, 'rango/add_page.html', context_dict)
 
 def register(request):
     # A boolean value for telling the template
